@@ -21,7 +21,7 @@ class Crossword(object):
         for i in range(self.rows):
             r = []
             for j in range(self.cols):
-                r.append('')
+                r.append('')   
             self.grid.append(r)
             
     def initialize_shadow_grid(self):
