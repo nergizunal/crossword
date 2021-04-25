@@ -9,7 +9,7 @@ import locale
 locale.setlocale(locale.LC_ALL, 'tr_TR.utf8')
 import re
 import copy
-
+import time
 class Cell(object):
     def __init__(self,letter = None, mark = 'A',x = 0,y = 0):
         self.letter = letter
@@ -27,7 +27,7 @@ class Cell(object):
     def updateMark(self, newMark):
         if(self.mark == 'A'):
             self.mark = newMark
-        elif(newMark == 'B'):
+        elif(newMark == 'B' or self.mark == 'B'):
             self.mark = 'B'
         elif(not(self.mark == newMark)):
             if(self.letter =='*'):
@@ -73,7 +73,7 @@ class Grid(object):
          
                 
             c = self.cells[cell.x][endy] #end
-            if(c.mark == 'B' or c.mark == 'H'):
+            if(c.mark == 'B' or c.mark == 'V'):
                 return False
             elif(c.mark != 'A'):
                 if(not(word.word[-1] == c.letter or c.letter == '*')):
@@ -86,21 +86,19 @@ class Grid(object):
             for l in range(1,word.length -1):
                 c = self.cells[cell.x][starty + l]
                 if(c.mark == 'B' or c.mark == 'V'):
-                    
                     return False
                 elif(c.mark == 'H'):
                     if(not(c.letter == '*' or word.word[l] == c.letter)):
-                        
                         return False 
         elif(cell.mark == 'V'): #vertical
             startx = cell.x - crossIndex
             endx = startx + word.length -1
-            if(endx > self.maxX ): 
-                if(endx-self.minX >= self.row):
+            
+            if(endx-self.minX >= self.row):
                     return False
                
-            if(startx < self.minX ):
-                if(self.maxX-startx >= self.row):
+            
+            if(self.maxX-startx >= self.row):
                     return False
             
             c = self.cells[startx -1][cell.y] #before start
@@ -177,12 +175,12 @@ class Grid(object):
             for j in range(1,len(self.cells[0]) - 1):
                 if (self.cells[i][j].letter != '*'):
                     if(self.cells[i - 1][j].mark=='B' and self.cells[i + 1][j].mark=='B' 
-                       and self.cells[i-1][j].letter != '*' and self.cells[i+1][j].letter != '*' ):
+                       and  self.cells[i][j-1].letter != '*' and self.cells[i][j+1].letter != '*'):
                         self.cells[i][j].updateMark('B')
                     elif(self.cells[i][j-1].mark=='B' and self.cells[i][j+1].mark=='B'
-                          and self.cells[i][j-1].letter != '*' and self.cells[i][j+1].letter != '*'):
+                          and self.cells[i-1][j].letter != '*' and self.cells[i+1][j].letter != '*'):
                         self.cells[i][j].updateMark('B')    
-        for i in range(1,len(self.cells) -1): #eğer 4 tarafı harf ya da blocked ise blockla
+        """ for i in range(1,len(self.cells) -1): #eğer 4 tarafı harf ya da blocked ise blockla
             for j in range(1,len(self.cells[0]) - 1):
                 c1 = self.cells[i - 1][j]
                 c2 = self.cells[i + 1][j]
@@ -192,7 +190,7 @@ class Grid(object):
                     if(c2.letter !='*' or c2.mark == 'B'):
                         if(c3.letter !='*' or c3.mark == 'B'):
                             if(c4.letter !='*' or c4.mark == 'B'):
-                                self.cells[i][j].updateMark('B')
+                                self.cells[i][j].updateMark('B')"""
                            
     def possibleIntersections(self,nextWord):
         for r in self.cells:
@@ -229,25 +227,39 @@ class Grid(object):
                     else:
                         print(c.mark,end = " ")
                 print()
+    
 class Word(object):
     def __init__(self, word = None):
         self.word = re.sub(r'\s', '', word.lower())
         self.length = len(self.word)
         self.dict = {}
         self.startScore = 0
+        self.intersectionScore = 0
     def calculateScore(self, list):
-        s = set()
-        for w in list:
+        
+        temp = copy.deepcopy(list)
+     
+        for w in temp:
             for c in w.word:
                 if(c in self.word):
-                    s.add(c)
-        self.startScore = len(s)
-        self.startScore = self.startScore
+                    self.startScore +=1
+           
+        #self.startScore = len(s)
+        #self.startScore = self.startScore
+    def dictSize(self):
+        count = 0
+        for k,v in self.dict.items():
+            for s in v:
+                count += 1
+        return count
+                
 class Solution(object):
     def __init__(self):
         self = self
     def sortByScoreWords(self,list):
-        list.sort(key = lambda s: s.startScore, reverse = False)
+        list.sort(key = lambda s: s.startScore, reverse = True)
+    def sortByInterSection(self,list):
+        list.sort(key = lambda s: s.intersectionScore, reverse = False)
     def solve(self):
         strList1 = ["bulvar","şerbet","derman","davet","dudak" ,"nehir","çukur","eksen","test","açık","ense","tek","beş","rota","ok"]
         strList2 = ["işlev","güveç","hamle","çalgı","enlem","düet","edep","bile","ece","oje"]
@@ -300,20 +312,27 @@ class Solution(object):
             l.remove(w)
             w.calculateScore(l)
             l.insert(i,w)
-        #self.sortByScoreWords(words)
+        
         grid = Grid(row,col)
         grid.startCells()
-        for w in words:
-            print(w.word, end = " ")
+        #self.sortByScoreWords(words)
+       
         
-        y = input("start")
+        
         w = words[0]
         print(w.word)
-        grid.insertWord(w.word, grid.cells[grid.row + 6][grid.col + 6], 0)
-        words.remove(w)
         
-        if(self.solveUtil(grid,words,2**len(words)) == False):
+        
+        grid.insertWord(w.word, grid.cells[grid.row + 6][grid.col + 6], 0)
+        
+        words.remove(w)
+        #self.sortByScoreWords(words)
+        for w in words:
+            print(w.word, end = " ")
+        y = input("start")
+        if(self.solveUtil(grid,words) == False):
             grid.printGrid()
+            grid.printMarks()
             return False
             
             
@@ -321,65 +340,83 @@ class Solution(object):
         print(grid.maxX, grid.minX)
         print(grid.maxY, grid.minY)
         grid.printGrid()
-        for w in words:
-            print(w.word)
-        print(len(words))
+        grid.printMarks()
+        
         return True
-
-    def solveUtil(self, grid, words, level, count = 0):
-        ez = len(words)
-        #grid.printGrid()  
-        #grid.printMarks()
-        if( ez <= 1):
-          grid.printGrid()
-          grid.printMarks()
-        if( ez <= 0):
-          grid.printGrid()
-          return True
-        
-        
-        tempGrid = copy.deepcopy(grid)
-        tempWords = copy.deepcopy(words)
-       # tempGrid = grid
-        #tempWords = words
-        for w in words: 
-            print(w.word, end = " ")
-    
-        print(len(words))
-        for w in words:
-            tempGrid.flushIntersections(w)
-            tempGrid.possibleIntersections(w)
-            
-            i = words.index(w)
-            words.remove(w)
-            
-            for k,v in w.dict.items():
-                for s in v:
-                    count +=1
-                    """if(count>level):
-                        print("countttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt")
-                        return False"""
-                    grid.insertWord(w.word, s, k)
-                    f = self.solveUtil(grid,words,level/2,count)
-                  
-                    if (f == True):
-                        grid.printGrid()
-                        return True
-                    
-                    #tempGrid = copy.deepcopy(grid) 
-                    #tempGrid = grid
-                    grid = copy.deepcopy(tempGrid)
-            words.insert(i,w) 
-        
-        return False
     
     def main(self):
-        g = self.solve()
-        print(g)
-       
-     
-    
-    
+            g = self.solve()
+            print(g)
+    def solveUtil(self, grid, words):
+            ez = len(words)
+            time_permitted = float(15.0)
+            if( ez <= 2):
+                grid.printGrid()  
+                for w in words: 
+                     print(w.word, end = " ")
+                if(ez <= 0):
+                    return True
+            
+           
+            tempGrid = copy.deepcopy(grid)
+            tempWords = copy.deepcopy(words)
+            
+            #for w in words: 
+             #  print(w.word, end = " ")
+            
+            #print(len(words))
+            start_full = float(time.time())
+          
+            i = 0
+            while i in range(len(tempWords)):
+                
+                #y = self.calcMinDict(tempWords[i:],tempGrid)
+                y = tempWords[i]
+                tempGrid.flushIntersections(y)
+                tempGrid.possibleIntersections(y)
+                #print("next words is", y.word )
+                i = tempWords.index(y)
+                tempWords.remove(y)
+                if(y.dictSize() <= 2):
+                    for k,v in y.dict.items():
+        
+                        for s in v:
+                            
+                            tempGrid.insertWord(y.word, s, k)
+                            f = self.solveUtil(tempGrid,tempWords)
+                            if (f == True):
+                                return True
+                           
+                            tempGrid = copy.deepcopy(grid)
+                    #print(len(tempWords), "temp words lenght")
+                tempWords.insert(i,y)
+                i += 1
+                
+            return False
+    def checkDictSize(self,list,grid):
+        for l in list:
+            grid.flushIntersections(l)
+            grid.possibleIntersections(l)
+        for l in list:
+            if(l.dictSize() == 1):
+                return True
+        return False
+    def calcMinDict(self,list,grid):
+        temp = list[0]
+        min = list[0].dictSize()
+        tempScore = temp.startScore
+        for l in list:
+            grid.flushIntersections(l)
+            grid.possibleIntersections(l)
+            i = list.index(l)
+            list.remove(l)
+            l.calculateScore(list)
+            list.insert(i,l)
+            if( l.dictSize()>0 and l.startScore > tempScore): #l.dictSize() < min and
+                temp = l
+                    
+            
+        return temp
 if __name__ == "__main__":
     s = Solution()
     s.main()    
